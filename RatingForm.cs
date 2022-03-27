@@ -8,6 +8,7 @@ namespace lab4
     public partial class RatingForm : Form
     {
         readonly Discipline currentDiscipline = null;
+        readonly string path = "Rating.txt";
 
         public RatingForm(Discipline discipline)
         {
@@ -15,71 +16,94 @@ namespace lab4
 
             currentDiscipline = new Discipline(discipline);
             groupNameLabel.Text = discipline.DisciplineName + " " + discipline.GroupName;
+
+            List<string> currentStudents = Get();
+
             foreach (string checkPoint in Discipline.CheckPoints)
             {
                 studentsDataGridView.Columns.Add("checkPointColumn", checkPoint);
             }
 
-            StreamReader streamReader = new StreamReader("Rating.txt");
-            while (!streamReader.EndOfStream)
+            for (int i = 0; i < currentStudents.Count; i++)
             {
-                if (streamReader.ReadLine() == $"{currentDiscipline.DisciplineName}({currentDiscipline.GroupName})")
+                string[] studentInfo = currentStudents[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                studentsDataGridView.Rows.Add($"{studentInfo[0]} {studentInfo[1]} {studentInfo[2]}");
+                for (int j = 1; j < studentsDataGridView.ColumnCount; j++)
                 {
-                    string line = streamReader.ReadLine();
-                    int index = 0;
-                    while (line != "..")
-                    {
-                        string[] words = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        studentsDataGridView.Rows.Add($"{words[0]} {words[1]} {words[2]}");
-                        for (int i = 1; i < studentsDataGridView.Columns.Count; i++)
-                        {
-                            studentsDataGridView[i, index].Value = words[i + 2];
-                        }
-                        index++;
-                        line = streamReader.ReadLine();
-                    }
-                    break;
+                    studentsDataGridView[j, i].Value = studentInfo[j + 2];
                 }
             }
-            streamReader.Close();
         }
 
         private void SaveButtonClicked(object sender, EventArgs e)
         {
-            LinkedList<string> text = new LinkedList<string>();
-            StreamReader streamReader = new StreamReader("Rating.txt");
-            do
-            {
-                text.AddLast(streamReader.ReadLine());
-                if (text.Last.Value == $"{currentDiscipline.DisciplineName}({currentDiscipline.GroupName})")
-                {
-                    for (int i = 0; i < studentsDataGridView.RowCount; i++)
-                    {
-                        string line = "";
-                        for (int j = 0; j < studentsDataGridView.ColumnCount; j++)
-                        {
-                            line += $" {studentsDataGridView[j, i].Value}";
-                        }
-                        streamReader.ReadLine();
-                        text.AddLast(line);
-                    }
-                }
-            }
-            while (!streamReader.EndOfStream);
-
-            streamReader.Close();
-            StreamWriter streamWriter = new StreamWriter("Rating.txt");
-            foreach (string txt in text)
-            {
-                streamWriter.WriteLine(txt);
-            }
-
-            streamWriter.Close();
+            string[] UpdatedStudentsInfo = GetAll();
+            SaveAll(UpdatedStudentsInfo);
         }
 
         private void CloseButtonClicked(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private bool IsValueEqualsDiscipline(string value)
+        {
+            return value == $"{currentDiscipline.DisciplineName}({currentDiscipline.GroupName})";
+        }
+
+        public string[] GetAll()
+        {
+            var streamReader = new StreamReader(path);
+            var ratingText = new List<string>();
+            while (!streamReader.EndOfStream)
+            {
+                ratingText.Add(streamReader.ReadLine());
+                if (IsValueEqualsDiscipline(ratingText[ratingText.Count - 1]))
+                {
+                    for (int i = 0; i < studentsDataGridView.RowCount; i++)
+                    {
+                        ratingText.Add("");
+                        for (int j = 0; j < studentsDataGridView.ColumnCount; j++)
+                        {
+                            ratingText[ratingText.Count - 1] += $" {studentsDataGridView[j, i].Value}";
+                        }
+                        streamReader.ReadLine();
+                    }
+                }
+            }
+            streamReader.Close();
+            return ratingText.ToArray();
+        }
+
+        public void SaveAll(string[] mas)
+        {
+            var streamWriter = new StreamWriter(path);
+            foreach (string line in mas)
+            {
+                streamWriter.WriteLine(line);
+            }
+            streamWriter.Close();
+        }
+
+        public List<string> Get()
+        {
+            var streamReader = new StreamReader(path);
+            var disciplineInfo = new List<string>();
+            while (!streamReader.EndOfStream)
+            {
+                if (IsValueEqualsDiscipline(streamReader.ReadLine()))
+                {
+                    var ratingLine = streamReader.ReadLine();
+                    while (ratingLine != "..")
+                    {
+                        disciplineInfo.Add(ratingLine);
+                        ratingLine = streamReader.ReadLine();
+                    }
+                    break;
+                }
+            }
+            streamReader.Close();
+            return disciplineInfo;
         }
     }
 }
