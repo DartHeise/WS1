@@ -5,7 +5,7 @@ using System.IO;
 
 namespace lab4
 {
-    public partial class RatingForm : Form
+    public partial class RatingForm : Form, IRatingStore
     {
         readonly Discipline currentDiscipline = null;
         readonly string path = "Rating.txt";
